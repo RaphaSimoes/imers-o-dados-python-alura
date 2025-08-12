@@ -3,11 +3,40 @@ import pandas as pd
 import plotly.express as px
 
 # --- Configuração da Página ---
-# Define o título da página, o ícone e o layout para ocupar a largura inteira.
 st.set_page_config(
     page_title="Dashboard de Salários na Área de Dados",
     page_icon="📊",
     layout="wide",
+)
+
+# --- Estilos CSS personalizados para todo o dashboard ---
+st.markdown(
+    """
+    <style>
+    /* Cor do texto principal */
+    .stMarkdown, .st-cf, .st-ba, .st-cg, .st-ch {
+        color: #fffff;
+    }
+    h1, h2, h3, h4, h5, h6 {
+        color: #4b0082; /* Roxo escuro */
+    }
+    /* Estilo para os tags dos filtros multiselect (os botões de seleção) */
+    .stMultiSelect div[role="listbox"] span.st-bp {
+        background-color: #ff69b4; /* Rosa */
+        color: white;
+        border: none; /* Removendo a borda */
+    }
+    /* Cor do ícone 'x' para remover tags */
+    .stMultiSelect div[role="listbox"] span.st-bn {
+        color: white;
+    }
+    /* Mudar a cor de destaque (multi-select, botões) */
+    .st-bd {
+        border-color: #ff69b4;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
 )
 
 # --- Carregamento dos dados ---
@@ -33,7 +62,6 @@ tamanhos_disponiveis = sorted(df['tamanho_empresa'].unique())
 tamanhos_selecionados = st.sidebar.multiselect("Tamanho da Empresa", tamanhos_disponiveis, default=tamanhos_disponiveis)
 
 # --- Filtragem do DataFrame ---
-# O dataframe principal é filtrado com base nas seleções feitas na barra lateral.
 df_filtrado = df[
     (df['ano'].isin(anos_selecionados)) &
     (df['senioridade'].isin(senioridades_selecionadas)) &
@@ -54,7 +82,7 @@ if not df_filtrado.empty:
     total_registros = df_filtrado.shape[0]
     cargo_mais_frequente = df_filtrado["cargo"].mode()[0]
 else:
-    salario_medio, salario_mediano, salario_maximo, total_registros, cargo_mais_comum = 0, 0, 0, ""
+    salario_medio, salario_maximo, total_registros, cargo_mais_frequente = 0, 0, 0, "Nenhum"
 
 col1, col2, col3, col4 = st.columns(4)
 col1.metric("Salário médio", f"${salario_medio:,.0f}")
@@ -78,7 +106,8 @@ with col_graf1:
             y='cargo',
             orientation='h',
             title="Top 10 cargos por salário médio",
-            labels={'usd': 'Média salarial anual (USD)', 'cargo': ''}
+            labels={'usd': 'Média salarial anual (USD)', 'cargo': ''},
+            color_discrete_sequence=['#ff69b4', '#9370db', '#ffd700', '#ee82ee', '#f08080']
         )
         grafico_cargos.update_layout(title_x=0.1, yaxis={'categoryorder':'total ascending'})
         st.plotly_chart(grafico_cargos, use_container_width=True)
@@ -92,7 +121,8 @@ with col_graf2:
             x='usd',
             nbins=30,
             title="Distribuição de salários anuais",
-            labels={'usd': 'Faixa salarial (USD)', 'count': ''}
+            labels={'usd': 'Faixa salarial (USD)', 'count': ''},
+            color_discrete_sequence=['#9370db'] # Roxo
         )
         grafico_hist.update_layout(title_x=0.1)
         st.plotly_chart(grafico_hist, use_container_width=True)
@@ -110,7 +140,8 @@ with col_graf3:
             names='tipo_trabalho',
             values='quantidade',
             title='Proporção dos tipos de trabalho',
-            hole=0.5  
+            hole=0.5,
+            color_discrete_sequence=px.colors.sequential.Plasma
         )
         grafico_remoto.update_traces(textinfo='percent+label')
         grafico_remoto.update_layout(title_x=0.1)
@@ -125,13 +156,13 @@ with col_graf4:
         grafico_paises = px.choropleth(media_ds_pais,
             locations='residencia_iso3',
             color='usd',
-            color_continuous_scale='rdylgn',
+            color_continuous_scale='Magma',
             title='Salário médio de Cientista de Dados por país',
             labels={'usd': 'Salário médio (USD)', 'residencia_iso3': 'País'})
         grafico_paises.update_layout(title_x=0.1)
         st.plotly_chart(grafico_paises, use_container_width=True)
     else:
-        st.warning("Nenhum dado para exibir no gráfico de países.") 
+        st.warning("Nenhum dado para exibir no gráfico de países.")
 
 # --- Tabela de Dados Detalhados ---
 st.subheader("Dados Detalhados")
